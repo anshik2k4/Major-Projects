@@ -1,0 +1,30 @@
+
+<% layout("/layouts/boiler.ejs")%>
+<body>
+    <h1 class="list-title">All listings</h1>
+
+    <div class="container px-lg-5 px-md-3  px-2 ">
+  <ul class="row  g-3 justify-content-between">
+
+  <% for(let listing of alllisting){ %>
+    <li class="col listing-style">
+        <a href="/listing/<%=listing._id%>" class="text-decoration-none text-reset stretched-link">
+
+             <div class="card shadow-sm" style="width: 15rem;">
+  <img src="<%=listing.image%>" class="card-img-top imaging" alt="...">
+  <div class="card-body">
+    <h5 class="card-title fw-bold small"><%=listing.title%></h5>
+    <h3 class="card-title text-muted mb-2"><%=listing.location%></h3>
+    <p><b class="fs-2">₹</b> <b class="fs-3"><%=listing.price.toLocaleString("en-IN")%></b>/night</p>
+  </div>
+</div>
+
+        </a>
+      
+   </li>
+    <%} %>
+    </ul>
+    
+    </div>
+  
+</body>

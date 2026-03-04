@@ -1,0 +1,155 @@
+<% layout("/layouts/boiler.ejs")%>
+<body>
+
+<div class="container py-5">
+
+<div class="unique-form-container shadow-lg">
+<h2 class="form-title">Create New Stay</h2>
+
+<form action="/listing/<%= Listings._id %>?_method=PUT" 
+      method="POST" 
+      novalidate 
+      class="needs-validation">
+
+<!-- Title -->
+<label class="form-label" for="title-input">Listing Title</label>
+<input 
+  type="text" 
+  class="title unique-input" 
+  name="title" 
+  value="<%= Listings.title %>" 
+  id="title-input"
+  required
+>
+<div class="invalid-feedback form-feedback">
+  Title cannot be empty.
+</div>
+<div class="valid-feedback form-feedback">
+  Looks good! Nice title.
+</div>
+
+<!-- Description -->
+
+<div>
+
+    <label class="form-label" for="desc-input">Description</label>
+<textarea 
+  name="description" 
+  required 
+  class="unique-input unique-textarea"
+  id="desc-input"
+><%= Listings.description %></textarea>
+
+<div class="invalid-feedback form-feedback">
+  Please enter description.
+</div>
+<div class="valid-feedback form-feedback">
+  Description looks good.
+</div>
+
+</div>
+
+
+<!-- Image URL (Required now) -->
+
+<div>
+
+   <label class="form-label" for="image-input">Image URL</label>
+<input 
+  type="url" 
+  class="imgurl unique-input" 
+  name="imageurl" 
+  id="image-input"
+  value="<%= Listings.image %>" 
+  required
+>
+<div class="invalid-feedback form-feedback">
+  Valid image URL is required.
+</div>
+<div class="valid-feedback form-feedback">
+   URL looks good.
+</div>
+
+
+</div>
+
+<div class="inp row">
+
+<!-- Price -->
+<div class="col-md-4">
+<label class="form-label small" for="price-input">Price</label>
+<input 
+  type="number" 
+  class="price unique-input" 
+  name="price" 
+  id="price-input"
+  value="<%= Listings.price %>" 
+  required
+>
+<div class="invalid-feedback form-feedback">
+  Price is required.
+</div>
+<div class="valid-feedback form-feedback">
+  Price set!
+</div>
+</div>
+
+<!-- Country -->
+<div class="col-md-6">
+<label class="form-label small" for="country-input">Country</label>
+<input 
+  type="text"
+  class="country unique-input" 
+  name="country"
+  id="country-input"
+  value="<%= Listings.country %>" 
+  required
+>
+<div class="invalid-feedback form-feedback">
+  Country is required.
+</div>
+<div class="valid-feedback form-feedback">
+  Country looks good.
+</div>
+</div>
+
+</div>
+
+<!-- Location -->
+
+<div>
+
+  <label class="form-label" for="location-input">Location</label>
+<input 
+  type="text" 
+  class="location unique-input" 
+  name="location" 
+  id="location-input"
+  value="<%= Listings.location %>"
+  required
+>
+<div class="invalid-feedback form-feedback">
+  Location is required.
+</div>
+<div class="valid-feedback form-feedback">
+  Location looks good.
+</div>
+
+</div>
+
+
+<!-- Button -->
+<div class="row justify-content-center mt-4">
+<div class="col-5 col-md-4 col-lg-3">
+<button type="submit" class="btn btn-outline-danger w-100 py-3">
+Update Listing
+</button>
+</div>
+</div>
+
+</form>
+</div>
+
+</div>
+</body>
+</html>

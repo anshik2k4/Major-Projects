@@ -1,0 +1,111 @@
+<% layout("/layouts/boiler.ejs")%>
+
+<div class="container show-cont">
+    
+    <div class="listing-details">
+  <h1>You are checking <%= listinginfo.title %></h1>
+
+  <img src="<%= listinginfo.image %>" alt="<%= listinginfo.title %>">
+
+  <p class="desc"><%= listinginfo.description %></p>
+
+  <p class="price">₹ <%= listinginfo.price.toLocaleString("en-IN") %></p>
+
+  <p class="location">
+    📍 <%= listinginfo.location %>, <%= listinginfo.country %>
+  </p>
+
+  <div class="listing-actions">
+    <a href="/listing/<%= listinginfo._id %>/update">Edit</a>
+
+    <form action="/listing/<%= listinginfo._id %>?_method=DELETE" method="POST">
+      <button type="submit" class="btn">Delete</button>
+    </form>
+  </div>
+
+</div>
+    
+    </div>
+
+
+     <!-- 🔥 NEW REVIEW SECTION -->
+  <div class="review-section">
+    <h2 class="review-title">Leave a Review</h2>
+    
+    <form action="/listing/<%= listinginfo._id %>/reviews" method="POST" class="review-form">
+      <!-- Rating Stars -->
+      <div class="rating-group">
+        <label class="rating-label">Rating:</label>
+        <div class="star-rating">
+          <input type="radio" id="star5" name="rating" value="5" class="star-input">
+          <label for="star5" class="star">★</label>
+          
+          <input type="radio" id="star4" name="rating" value="4" class="star-input">
+          <label for="star4" class="star">★</label>
+          
+          <input type="radio" id="star3" name="rating" value="3" class="star-input">
+          <label for="star3" class="star">★</label>
+          
+          <input type="radio" id="star2" name="rating" value="2" class="star-input">
+          <label for="star2" class="star">★</label>
+          
+          <input type="radio" id="star1" name="rating" value="1" class="star-input">
+          <label for="star1" class="star">★</label>
+        </div>
+      </div>
+
+      <!-- Comments -->
+      <div class="comment-group">
+        <textarea 
+          name="comment" 
+          class="review-textarea" 
+          placeholder="Share your experience..." 
+          required
+          minlength="10"
+        ></textarea>
+      </div>
+
+      <!-- Submit -->
+      <button type="submit" class="submit-review-btn">Submit Review</button>
+    </form>
+  </div>
+
+  <!-- 🔥 ALL REVIEWS SECTION -->
+<% if (listinginfo.reviews && listinginfo.reviews.length > 0) { %>
+<div class="reviews-section mt-5">
+  <h3 class="reviews-title">
+    <i class="fas fa-star me-2 text-warning"></i>
+    <%= listinginfo.reviews.length %> Reviews
+  </h3>
+  
+  <div class="reviews-list">
+    <% listinginfo.reviews.forEach(review => { %>
+    <div class="review-card">
+      <div class="review-header">
+        <span class="review-rating"><%= review.rating %> 
+          <i class="fas fa-star text-warning"></i>
+        </span>
+        <span class="review-date">
+          <%= new Date(review.createdAt).toLocaleDateString('en-IN') %>
+        </span>
+      </div>
+      <p class="review-comment"><%= review.comment %></p>
+    </div>
+
+   <!-- 🔥 DELETE BUTTON -->
+  <form method="POST" action="/listing/<%= listinginfo._id %>/reviews/<%= review._id %>?_method=DELETE" 
+        class="delete-form" style="display: inline;">
+    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this review?')">
+      <i class="fas fa-trash"></i> Delete
+    </button>
+  </form>
+    <% }) %>
+  </div>
+</div>
+<% } else { %>
+<div class="no-reviews mt-5">
+  <h5 class="text-muted text-center">No reviews yet. Be the first to review!</h5>
+</div>
+<% } %>
+
+</div>
