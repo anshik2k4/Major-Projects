@@ -1,16 +1,16 @@
 <!-- Flash Messages -->
   <div class="flash-container">
-    <% if(successmsg && successmsg.length) { %>
+    <% if(success && success.length) { %>
       <div class="flash-msg" id="flashMsg">
         <span class="flash-icon">✅</span>
-        <span><%= successmsg %></span>
+        <span><%= success %></span>
         <span class="flash-close" onclick="this.parentElement.remove()">✕</span>
       </div>
     <% } %>
-    <% if(errormsg && errormsg.length > 0) { %>
+    <% if(error && error.length > 0) { %>
       <div class="flash-msg error" id="flashErr">
         <span class="flash-icon">❌</span>
-        <span><%= errormsg %></span>
+        <span><%= error %></span>
         <span class="flash-close" onclick="this.parentElement.remove()">✕</span>
       </div>
     <% } %>

@@ -5,12 +5,14 @@
       🏠 StayHub
     </a>
 
-    <!-- Add New Button (Left side) -->
-    <div class="navbar-nav me-auto">
-      <a class="nav-link fw-bold" href="/listing/new" style="color: rgb(224, 59, 92);">
-        ➕ <i class="fas fa-plus-circle me-1"></i>Add your Stay
-      </a>
-    </div>
+    <!-- Add New Button (sirf logged-in users ke liye) -->
+    <% if (isLoggedIn) { %>
+      <div class="navbar-nav me-auto">
+        <a class="nav-link fw-bold" href="/listing/new" style="color: rgb(224, 59, 92);">
+          ➕ <i class="fas fa-plus-circle me-1"></i>Add your Stay
+        </a>
+      </div>
+    <% } %>
 
     <!-- Toggler -->
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -20,17 +22,33 @@
     <!-- Right side buttons -->
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav ms-auto">
-        <!-- LOGIN/SIGNUP BUTTONS -->
-        <li class="nav-item ms-3">
-          <a href="/login" class="btn btn-outline-danger px-4 py-2">
-            <i class="fas fa-sign-in-alt me-1"></i>Login
-          </a>
-        </li>
-        <li class="nav-item">
-          <a href="/signup" class="btn btn-danger px-4 py-2 ms-2">
-            <i class="fas fa-user-plus me-1"></i>Signup
-          </a>
-        </li>
+        <% if (isLoggedIn) { %>
+          <!-- ✅ LOGGED IN: User info + Logout -->
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle fw-bold" href="#" data-bs-toggle="dropdown" style="color: rgb(224, 59, 92);">
+              👤 <%= currentUser.username %>
+            </a>
+            <ul class="dropdown-menu">
+              <li>
+                <a href="/logout" class="dropdown-item fw-bold text-danger">
+                  🚪 Logout
+                </a>
+              </li>
+            </ul>
+          </li>
+        <% } else { %>
+          <!-- ✅ NOT LOGGED IN: Login + Signup -->
+          <li class="nav-item ms-3">
+            <a href="/login" class="btn btn-outline-danger px-4 py-2">
+              <i class="fas fa-sign-in-alt me-1"></i>Login
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/signup" class="btn btn-danger px-4 py-2 ms-2">
+              <i class="fas fa-user-plus me-1"></i>Signup
+            </a>
+          </li>
+        <% } %>
       </ul>
     </div>
   </div>

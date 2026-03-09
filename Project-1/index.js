@@ -62,12 +62,10 @@ passport.deserializeUser(User.deserializeUser()); // user jb logout kre to uski 
 // });
 
 
+
+
 // Flash middleware 
-app.use((req, res, next) => {
-  res.locals.successmsg = req.flash("success"); //✅ Har request pe automatically set hoga
-  res.locals.errormsg = req.flash("error");
-  next();
-});
+
 
 
 // Ejs engine accesing
@@ -119,6 +117,27 @@ const catchAsync = require("./public/js/wrapper.js");
 //     res.send("Server started");
 // });
 
+// ✅ isAuthenticated Middleware
+const isAuthenticated = (req, res, next) => {
+  if (req.isAuthenticated()) {
+    res.locals.isLoggedIn = true;  // ✅ Global variable for EJS
+    res.locals.currentUser = req.user;  // ✅ Current user info
+    next();
+  } else {
+    req.flash("error", "You need to login first!");
+    res.redirect("/login");
+  }
+};
+
+// ✅ Global middleware
+app.use((req, res, next) => {
+  res.locals.success = req.flash("success");  // Backend ke "success"
+  res.locals.error = req.flash("error");      // Backend ke "error"  
+  res.locals.isLoggedIn = req.isAuthenticated();
+  res.locals.currentUser = req.user;
+  next();
+});
+
 // index route where all listings will be shown
 app.get("/listing",catchAsync(async(req,res)=>{
     const alllisting=await Listing.find({})
@@ -128,12 +147,12 @@ app.get("/listing",catchAsync(async(req,res)=>{
 
 // Creating new Route for adding details thorugh form 
 //  GET: Form dikhane ke liye
-app.get("/listing/new", (req, res) => {
+app.get("/listing/new",isAuthenticated, (req, res) => {
     res.render("listing/new");  
 });
 
 //  POST:
-app.post("/listing",catchAsync(async (req, res) => {
+app.post("/listing",isAuthenticated,catchAsync(async (req, res) => {
    // console.log(req.body);  // {title: "...", description: "..."}
     
     let { title, description, imageurl, price, location,country } = req.body;
@@ -177,7 +196,7 @@ const validateObjectId = (req, res, next) => {
 
 
 
-app.get("/listing/:id/update", validateObjectId,catchAsync(async (req, res) => {
+app.get("/listing/:id/update",isAuthenticated, validateObjectId,catchAsync(async (req, res) => {
     const { id } = req.params;
     const Listings = await Listing.findById(id);
 
@@ -187,7 +206,7 @@ app.get("/listing/:id/update", validateObjectId,catchAsync(async (req, res) => {
     res.render("listing/update.ejs", { Listings });
 }));
 
-app.put("/listing/:id", validateObjectId, catchAsync(async(req, res) => {
+app.put("/listing/:id",isAuthenticated, validateObjectId, catchAsync(async(req, res) => {
     const { id } = req.params;
 
      if (!req.body.title || !req.body.price) {
@@ -216,7 +235,7 @@ app.put("/listing/:id", validateObjectId, catchAsync(async(req, res) => {
 
 // delete route 
 
-app.delete("/listing/:id",validateObjectId, catchAsync( async(req,res)=>{
+app.delete("/listing/:id",isAuthenticated,validateObjectId, catchAsync( async(req,res)=>{
 let {id}=req.params;
 
  const listing = await Listing.findById(id);
@@ -360,6 +379,17 @@ app.post("/login", passport.authenticate("local", {
     req.flash("success", `Welcome back ${req.user.username}!`);
     res.redirect("/listing");
 });
+
+// logout route
+app.get("/logout", (req, res, next) => {
+  req.logout((err) => {
+    if (err) return next(err);
+    req.flash("success", "Logged out successfully!");
+    res.redirect("/listing");
+  });
+});
+
+
 
 // Global error middleware
 
