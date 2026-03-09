@@ -1,0 +1,24 @@
+<!-- Flash Messages -->
+  <div class="flash-container">
+    <% if(successmsg && successmsg.length) { %>
+      <div class="flash-msg" id="flashMsg">
+        <span class="flash-icon">✅</span>
+        <span><%= successmsg %></span>
+        <span class="flash-close" onclick="this.parentElement.remove()">✕</span>
+      </div>
+    <% } %>
+    <% if(errormsg && errormsg.length > 0) { %>
+      <div class="flash-msg error" id="flashErr">
+        <span class="flash-icon">❌</span>
+        <span><%= errormsg %></span>
+        <span class="flash-close" onclick="this.parentElement.remove()">✕</span>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Auto remove after 4 seconds -->
+  <script>
+    setTimeout(() => {
+      document.querySelectorAll('.flash-msg').forEach(el => el.remove());
+    }, 4000);
+  </script>

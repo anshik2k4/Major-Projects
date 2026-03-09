@@ -1,0 +1,29 @@
+<% layout("/layouts/boiler.ejs") %>
+
+<div class="signup-cont">
+  <div class="signup-card">
+    <h2 class="form-title">Create Account</h2>
+
+    <form action="/signup" method="POST" >
+      
+      <label class="form-label">Username</label>
+      <input type="text" name="username" class="unique-input" placeholder="Enter username" >
+
+      <label class="form-label">Email</label>
+      <input type="email" name="email" class="unique-input" placeholder="Enter email" >
+
+      <label class="form-label">Password</label>
+      <input type="password" name="password" class="unique-input" placeholder="Enter password" >
+
+      <button type="submit" class="btn btn-outline-danger w-75 d-block mx-auto">
+        Sign Up
+      </button>
+
+      <p class="text-center mt-3">
+        Already have an account? 
+        <a href="/login" style="color: rgb(224, 59, 92);">Login</a>
+      </p>
+
+    </form>
+  </div>
+</div>

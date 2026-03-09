@@ -441,3 +441,92 @@ margin-bottom: 3rem;
   padding: 2rem;
   color: #888;
 }
+
+
+/* Flash pop up design */
+
+/* Flash Message Popup */
+.flash-container {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.flash-msg {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-radius: 16px;
+  font-size: 15px;
+  font-weight: 600;
+  min-width: 280px;
+  max-width: 380px;
+  box-shadow: 0 8px 25px rgba(224, 59, 92, 0.25);
+  animation: slideIn 0.4s ease, fadeOut 0.5s ease 3.5s forwards;
+  background: linear-gradient(135deg, rgb(224, 59, 92), #ff6b9d);
+  color: white;
+}
+
+.flash-msg .flash-icon {
+  font-size: 20px;
+}
+
+.flash-msg .flash-close {
+  margin-left: auto;
+  cursor: pointer;
+  font-size: 18px;
+  opacity: 0.8;
+}
+
+.flash-msg .flash-close:hover {
+  opacity: 1;
+}
+
+/* Error flash */
+.flash-msg.error {
+  background: linear-gradient(135deg, #333, #555);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+}
+
+@keyframes slideIn {
+  from { transform: translateX(120%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(120%); }
+}
+
+
+
+/* signup form styling */
+.signup-cont {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+}
+
+.signup-card {
+  background: white;
+  border-radius: 20px;
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+
+.unique-input:focus {
+  outline-color: #dc3545;
+  box-shadow: none;
+}
+
+.unique-input:valid {
+  border-color: inherit;
+}

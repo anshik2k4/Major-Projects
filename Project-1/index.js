@@ -7,9 +7,73 @@ const methodOverride = require("method-override"); // for post delete put reques
 const ejsMate=require("ejs-mate"); // to avoid restyling the same thing at multiple route
 app.use(methodOverride("_method"));
 
+// to authenticate the user for login and signup 
+const passport=require("passport"); 
+const localStrategy=require("passport-local"); // 
+const User=require("./model/user.js");
+
+//Express sessiomn setup
+const session=require("express-session");
+const flash=require("connect-flash"); //we are using this to show ine time popup msgs for some new added listing or reviews
+
+const onesession = {
+  secret: "Listingsecret",
+  saveUninitialized: true,
+  resave: false,
+  cookie: {
+    maxAge: 7*24*60*60*1000,   //iss hum information jo save kra rhe uska expiry set kr skte hai ki wo kitne din me expiry hone chaaie example me 7 days baad ye  jo seeion ka ka expiry ho jaayega  mtlb ek session jo 
+    httpOnly: true // xxx protection i.e use to prevent from cross scripting 
+  }
+};
+
+  app.use(session(onesession));
+app.use(flash());
+
+// authentication in built feature accessing
+
+// In short passport is a framework andd passport-local ek strategy hai jo user ko ks taike se verify kre 
+// passpoert-amazon, passport-spootify, passport- etc ,,,,jiska use krke hum verify user kr ske 
+// passport ko use krne se pahle humra session initialized hona chaaie 
+app.use(passport.initialize()); // passport ko initailize kiya hummne 
+app.use(passport.session()); // passport ko use krne ke liye session ke need hoti hai kuki user ek seesion me aaye login kre to baar baar use 
+// login na karna pade jb wo tab switch kre to 
+passport.use((new localStrategy(User.authenticate()))); // passport ke andr ko bhi use aaye localstrategy ke through wo authenticate() hoge 
+passport.serializeUser(User.serializeUser()); // user jb login kre to uski information ko store krna 
+passport.deserializeUser(User.deserializeUser()); // user jb logout kre to uski information ko saved wale databse se htna 
+
+// creating a demo user for login and signup testing 
+
+// app.get("/demo", async(req,res)=>{
+//     let demo=new User(
+//         {
+//     email:"abc@gmail.com",
+//     username:"abc" // bhale hi  humne user schema ke andr username define nhi kiya tha 
+//     // but due to passport-local ye automatically username create kraa dega 
+//         }
+        
+// );
+
+// let registeredUser= await User.register(demo,"abc123"); // yaha hum demo jisme info store hai aur password pass krenge 
+// // also this register method ye automaticallly check kre lge ki username uniquee hai ya nhi 
+
+// console.log(registeredUser);
+// res.send("User successfully logged in");
+
+// });
+
+
+// Flash middleware 
+app.use((req, res, next) => {
+  res.locals.successmsg = req.flash("success"); //✅ Har request pe automatically set hoga
+  res.locals.errormsg = req.flash("error");
+  next();
+});
+
+
 // Ejs engine accesing
 app.set("view engine","ejs");
 app.engine("ejs",ejsMate);
+
 
 //connecting path
 app.set("views",path.join(__dirname,"/views"));
@@ -62,7 +126,6 @@ app.get("/listing",catchAsync(async(req,res)=>{
 }));
 
 
-
 // Creating new Route for adding details thorugh form 
 //  GET: Form dikhane ke liye
 app.get("/listing/new", (req, res) => {
@@ -93,7 +156,8 @@ app.post("/listing",catchAsync(async (req, res) => {
     await newlisting.save()
     .then(res=>{
         console.log(res);
-    })
+    })     
+    req.flash("success","Listing added succesfully");
     res.redirect("/listing");  // Success → listings page
 }));
 
@@ -143,7 +207,8 @@ app.put("/listing/:id", validateObjectId, catchAsync(async(req, res) => {
         throw new AppError("Listing Not Found", 404);
     }
     
-    
+    req.flash("success", "Listing updated successfully!");
+
 
     res.redirect(`/listing/${id}`);
 }));
@@ -157,6 +222,8 @@ let {id}=req.params;
  const listing = await Listing.findById(id);
   if (!listing) throw new AppError("Listing Not Found", 404);
   await listing.deleteOne();  // CASCADE HOOK WORKS!
+  req.flash("success", "Listing deleted successfully!");
+
  res.redirect("/listing");
 }));
 
@@ -210,6 +277,8 @@ app.post('/listing/:id/reviews', catchAsync(async (req, res) => {
   listing.reviews.push(savedReview._id);
   await listing.save();
   
+  req.flash("success", "Review added successfully!");
+
   res.redirect(`/listing/${listingId}`);
 }));
 
@@ -228,11 +297,69 @@ app.delete('/listing/:listingId/reviews/:reviewId',catchAsync(async (req, res) =
   listing.reviews.pull(reviewId);  // 🔥 Array se remove
   await listing.save();
   
+  req.flash("success", "Review deleted successfully!");
+
   res.redirect(`/listing/${listingId}`);
 }));
 
 
+// signup get route 
+app.get("/signup",(req, res) => {
+    res.render("listing/signup.ejs");
+});
 
+// signup post route with error handling 
+app.post("/signup", async (req, res) => {
+    try {
+        let { username, email, password } = req.body;
+        
+        // Validation
+        if (!username.trim() || !email.trim() || !password.trim()) {
+    req.flash("error", "All fields are required!");
+    return res.redirect("/signup");
+}
+
+        if (password.length < 6) {
+            req.flash("error", "Password must be at least 6 characters!");
+            return res.redirect("/signup");
+        }
+
+        let newUser = new User({ username, email });
+        let registeredUser = await User.register(newUser, password);
+        console.log(registeredUser);
+        req.flash("success", `Welcome ${username}, You registered Successfully!`);
+        res.redirect("/listing");
+
+    }  catch (err) {
+    // Username already exists
+    if (err.name === "UserExistsError") {
+        req.flash("error", "Username already taken, try another!");
+        return res.redirect("/signup");
+    }
+    // Email already exists
+    if (err.code === 11000 && err.keyPattern.email) {
+        req.flash("error", "Email already registered, try login!");
+        return res.redirect("/signup");
+    }
+    // Baaki errors
+    req.flash("error", err.message);
+    res.redirect("/signup");
+}
+});
+
+// Login GET route
+app.get("/login", (req, res) => {
+    res.render("listing/login.ejs");
+});
+
+// Login POST route
+app.post("/login", passport.authenticate("local", {
+    failureRedirect: "/login",
+    failureFlash: true  // ✅ Automatically error flash set karega
+}), (req, res) => {
+    req.flash("success", `Welcome back ${req.user.username}!`);
+    res.redirect("/listing");
+});
 
 // Global error middleware
 

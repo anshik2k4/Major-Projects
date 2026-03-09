@@ -1,0 +1,26 @@
+<% layout("/layouts/boiler.ejs") %>
+
+<div class="signup-cont">
+  <div class="signup-card">
+    <h2 class="form-title">Welcome Back 👋</h2>
+
+    <form action="/login" method="POST" novalidate>
+      
+      <label class="form-label">Username</label>
+      <input type="text" name="username" class="unique-input" placeholder="Enter username">
+
+      <label class="form-label">Password</label>
+      <input type="password" name="password" class="unique-input" placeholder="Enter password">
+
+      <button type="submit" class="btn btn-outline-danger w-75 d-block mx-auto mb-3">
+        Login
+      </button>
+
+      <p class="text-center mt-2">
+        Don't have an account? 
+        <a href="/signup" style="color: rgb(224, 59, 92);">Sign Up</a>
+      </p>
+
+    </form>
+  </div>
+</div>

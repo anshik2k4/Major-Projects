@@ -47,5 +47,5 @@
  //creating model which contains collection
  const Listing=mongoose.model("Listing",listingSchema);
  //exporting our model
- module.exports=Listing;
+ module.exports=Listing;     
  
