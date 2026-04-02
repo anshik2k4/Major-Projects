@@ -9,7 +9,7 @@
 <form action="/listing/<%= Listings._id %>?_method=PUT" 
       method="POST" 
       novalidate 
-      class="needs-validation">
+      class="needs-validation" enctype="multipart/form-data">
 
 <!-- Title -->
 <label class="form-label" for="title-input">Listing Title</label>
@@ -54,25 +54,12 @@
 
 <div>
 
-   <label class="form-label" for="image-input">Image URL</label>
-<input 
-  type="url" 
-  class="imgurl unique-input" 
-  name="imageurl" 
-  id="image-input"
-  value="<%= Listings.image %>" 
-  required
->
-<div class="invalid-feedback form-feedback">
-  Valid image URL is required.
+  <label class="form-label">Update Image</label>
+  <input type="file" 
+         class="unique-input" 
+         name="image" 
+         accept="image/*">
 </div>
-<div class="valid-feedback form-feedback">
-   URL looks good.
-</div>
-
-
-</div>
-
 <div class="inp row">
 
 <!-- Price -->

@@ -13,12 +13,9 @@
     description:{
         type:String,
     },
-    image:{
-        type:String,
-        //dafault value is for when the image link is not present
-        default:"https://unsplash.com/photos/an-aerial-view-of-the-city-of-london-8nVNRt0Ltxg",
-        // set function is for when image link is present but is empty
-        set:(v)=> v===" "?"https://unsplash.com/photos/an-aerial-view-of-the-city-of-london-8nVNRt0Ltxg":v,
+    image: {
+    url: { type: String, default: "" },
+    filename: { type: String, default: "" }
     },
     price:{
         type:Number,
@@ -35,7 +32,16 @@
         reviews: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Review'  // Review model name
-  }]
+  }],
+   
+  owner:{
+    type:mongoose.Schema.Types.ObjectId,
+    ref:"User"
+  },
+  coordinates: {
+    lat: { type: Number },
+    lon: { type: Number }
+}
 
  });
 

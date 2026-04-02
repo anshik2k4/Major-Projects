@@ -4,7 +4,7 @@
         <div class="unique-form-container shadow-lg">
             <h2 class="form-title">Create New Stay</h2>
             
-            <form action="/listing" method="POST" novalidate class="needs-validation">
+            <form action="/listing" method="POST" novalidate class="needs-validation" enctype="multipart/form-data">
 
   <!-- Title -->
   <input type="text" class="unique-input" name="title"
@@ -31,9 +31,7 @@
   
 
   <!-- Image URL (optional) -->
-  <input type="url" class="unique-input" name="imageurl"
-         placeholder="🖼️ Image URL">
-
+  <input type="file" class="unique-input" name="image" accept="image/*">
   <div class="input row">
     <div class="col-md-4">
       <input type="number" class="unique-input" name="price"

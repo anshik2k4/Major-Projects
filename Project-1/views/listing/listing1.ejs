@@ -12,7 +12,9 @@
         <a href="/listing/<%=listing._id%>" class="text-decoration-none text-reset ">
 
              <div class="card shadow-sm" style="width: 15rem;">
-  <img src="<%=listing.image%>" class="card-img-top imaging" alt="...">
+  <!-- listing1.ejs -->
+<img src="<%= typeof listing.image === 'object' ? listing.image.url : listing.image %>" class="card-img-top imaging" alt="...">
+
   <div class="card-body">
     <h5 class="card-title fw-bold small"><%=listing.title%></h5>
     <h3 class="card-title text-muted mb-2"><%=listing.location%></h3>

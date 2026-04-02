@@ -15,7 +15,11 @@ const reviewSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now  // ✅ Current date
-  }
+  },
+  author: {                                    // ✅ Yeh add karo
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
+    }
 }, {
   timestamps: false
 });
