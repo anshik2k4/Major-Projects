@@ -70,6 +70,12 @@
 
   </div>
 
+  <label class="form-label" for="category-new">Stay type</label>
+  <select class="unique-input" name="category" id="category-new" required style="width: 90%;">
+    <% for (const opt of categoryOptions) { %>
+      <option value="<%= opt.id %>"><%= opt.label %></option>
+    <% } %>
+  </select>
 
   <div class="row justify-content-center mt-4">
     <div class="col-5 col-md-4 col-lg-3">

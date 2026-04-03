@@ -124,6 +124,13 @@
 
 </div>
 
+<label class="form-label" for="category-update">Stay type</label>
+<select class="unique-input" name="category" id="category-update" required style="width: 90%;">
+  <% const currentCat = Listings.category || "city"; %>
+  <% for (const opt of categoryOptions) { %>
+    <option value="<%= opt.id %>" <%= opt.id === currentCat ? "selected" : "" %>><%= opt.label %></option>
+  <% } %>
+</select>
 
 <!-- Button -->
 <div class="row justify-content-center mt-4">

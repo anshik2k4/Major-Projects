@@ -1,0 +1,23 @@
+<% 
+  const sel = (typeof locals !== "undefined" && locals.selectedCategory != null)
+    ? locals.selectedCategory
+    : (typeof selectedCategory !== "undefined" ? selectedCategory : null);
+  const qStr = (typeof locals !== "undefined" && locals.searchQuery !== undefined)
+    ? String(locals.searchQuery || "").trim()
+    : (typeof searchQuery !== "undefined" ? String(searchQuery || "").trim() : "");
+  const qRaw = qStr;
+  const qSuffix = qRaw ? `&q=${encodeURIComponent(qRaw)}` : "";
+%>
+<nav class="category-strip" aria-label="Browse by stay type">
+  <div class="category-strip-inner">
+    <% for (const item of categoryBarItems) { 
+         const active = (item.id === null && !sel) || (item.id && item.id === sel);
+         const href = item.id ? `/listing?category=${item.id}${qSuffix}` : (qRaw ? `/listing?q=${encodeURIComponent(qRaw)}` : "/listing");
+    %>
+      <a href="<%= href %>" class="category-pill <%= active ? "category-pill--active" : "" %>">
+        <span class="category-pill__icon" aria-hidden="true"><i class="<%= item.icon %>"></i></span>
+        <span class="category-pill__label"><%= item.label %></span>
+      </a>
+    <% } %>
+  </div>
+</nav>

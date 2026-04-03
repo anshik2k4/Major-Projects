@@ -1,6 +1,55 @@
 const express = require("express");
 const router = express.Router();
 const Listing = require("../model/listing.js");
+const {
+    CATEGORY_BAR_ITEMS,
+    isValidCategory,
+} = require("../constants/listingCategories.js");
+
+const categoryFormOptions = CATEGORY_BAR_ITEMS.filter((c) => c.id);
+
+function escapeRegex(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Normalize Express query (string | string[] | undefined) */
+function getSearchQuery(req) {
+    const raw = req.query.q;
+    if (raw == null) return "";
+    const s = Array.isArray(raw) ? raw[0] : raw;
+    return typeof s === "string" ? s.trim() : String(s).trim();
+}
+
+/**
+ * Match each word against title, location, country, or description (case-insensitive).
+ * Uses MongoDB $regex so behavior is consistent across drivers.
+ */
+function buildListingSearchFilter(q) {
+    const tokens = q
+        .split(/\s+/)
+        .map((t) => t.trim())
+        .filter(Boolean);
+    if (!tokens.length) return null;
+
+    const fieldMatch = (token) => {
+        const pattern = escapeRegex(token);
+        const rx = { $regex: pattern, $options: "i" };
+        return {
+            $or: [
+                { title: rx },
+                { location: rx },
+                { country: rx },
+                { description: rx },
+            ],
+        };
+    };
+
+    if (tokens.length === 1) {
+        return fieldMatch(tokens[0]);
+    }
+    return { $and: tokens.map(fieldMatch) };
+}
+
 const AppError = require("../public/js/Error.js");
 const catchAsync = require("../public/js/wrapper.js");
 const multer = require("multer"); // ✅ Multer import ye hume multipart data ko parse krne ki permission deta
@@ -42,23 +91,64 @@ const isOwner = catchAsync(async (req, res, next) => {
 
 // Index route
 router.get("/", catchAsync(async (req, res) => {
-    const alllisting = await Listing.find({});
-    res.render("listing/listing1.ejs", { alllisting });
+    const raw = req.query.category;
+    let categoryFilter = null;
+    let selectedCategory = null;
+
+    if (raw && raw !== "all" && isValidCategory(raw)) {
+        selectedCategory = raw;
+        if (raw === "city") {
+            categoryFilter = {
+                $or: [
+                    { category: "city" },
+                    { category: { $exists: false } },
+                    { category: null },
+                ],
+            };
+        } else {
+            categoryFilter = { category: raw };
+        }
+    }
+
+    const q = getSearchQuery(req);
+    let searchFilter = null;
+    if (q) {
+        searchFilter = buildListingSearchFilter(q);
+    }
+
+    let filter = {};
+    if (categoryFilter && searchFilter) {
+        filter = { $and: [categoryFilter, searchFilter] };
+    } else if (categoryFilter) {
+        filter = categoryFilter;
+    } else if (searchFilter) {
+        filter = searchFilter;
+    }
+
+    const alllisting = await Listing.find(filter);
+    res.render("listing/listing1.ejs", {
+        alllisting,
+        selectedCategory,
+        categoryBarItems: CATEGORY_BAR_ITEMS,
+        searchQuery: q,
+    });
 }));
 
 // New form
 router.get("/new", isAuthenticated, (req, res) => {
-    res.render("listing/new");
+    res.render("listing/new", { categoryOptions: categoryFormOptions });
 });
 
 // Create
 router.post("/", isAuthenticated, upload.single("image"), catchAsync(async (req, res) => {
-    let { title, description, price, location, country } = req.body;
+    let { title, description, price, location, country, category } = req.body;
     let owner = req.user._id;
 
     if (!title || !description || !price || !location || !country) {
         throw new AppError("All fields are required", 400);
     }
+
+    const listingCategory = isValidCategory(category) ? category : "city";
 
     let image = {
         url: req.file.path,
@@ -92,7 +182,8 @@ router.post("/", isAuthenticated, upload.single("image"), catchAsync(async (req,
         title, description,
         image,
         price, location, country, owner,
-        coordinates
+        coordinates,
+        category: listingCategory,
     });
 
     await newlisting.save();
@@ -108,7 +199,10 @@ router.get("/:id/update", isAuthenticated, validateObjectId, isOwner, catchAsync
     const { id } = req.params;
     const Listings = await Listing.findById(id);
     if (!Listings) throw new AppError("Listing Not Found", 404);
-    res.render("listing/update.ejs", { Listings });
+    res.render("listing/update.ejs", {
+        Listings,
+        categoryOptions: categoryFormOptions,
+    });
 }));
 
 // Update
@@ -142,13 +236,18 @@ router.put("/:id", isAuthenticated, validateObjectId, isOwner, upload.single("im
         lon: geoData[0]?.lon || null
     };
 
+    const listingCategory = isValidCategory(req.body.category)
+        ? req.body.category
+        : "city";
+
     let updateData = {
         title: req.body.title,
         description: req.body.description,
         price: req.body.price,
         location: req.body.location,
         country: req.body.country,
-        coordinates  // ✅ Coordinates update karo
+        coordinates, // ✅ Coordinates update karo
+        category: listingCategory,
     };
 
     // ✅ Nai image upload hui toh update karo

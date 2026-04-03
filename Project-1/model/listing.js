@@ -2,7 +2,8 @@
 
  const mongoose=require("mongoose");
  const Schema= mongoose.Schema;
- const Review = require('./review.js'); 
+ const Review = require('./review.js');
+ const { LISTING_CATEGORIES } = require("../constants/listingCategories.js");
 
  //schiema define
  const listingSchema=Schema({
@@ -41,7 +42,12 @@
   coordinates: {
     lat: { type: Number },
     lon: { type: Number }
-}
+},
+  category: {
+    type: String,
+    enum: LISTING_CATEGORIES,
+    default: "city",
+  },
 
  });
 

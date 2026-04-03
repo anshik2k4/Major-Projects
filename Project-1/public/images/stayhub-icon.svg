@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+  <defs>
+    <linearGradient id="stayhubGrad" x1="6" y1="6" x2="42" y2="42" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E03B5C"/>
+      <stop offset="1" stop-color="#FF6B8A"/>
+    </linearGradient>
+  </defs>
+  <!-- Rounded tile + home (stay) mark -->
+  <rect x="4" y="4" width="40" height="40" rx="12" fill="url(#stayhubGrad)"/>
+  <path fill="#ffffff" fill-opacity="0.98" d="M24 13.5L12.5 23.2V35.5h8.5v-9h6v9h8.5V23.2L24 13.5z"/>
+  <rect x="20" y="26.5" width="8" height="9" rx="1.2" fill="#E03B5C"/>
+</svg>

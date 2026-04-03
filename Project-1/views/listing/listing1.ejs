@@ -1,8 +1,36 @@
 
 <% layout("/layouts/boiler.ejs")%> 
 
-    
-    <h1 class="list-title">All listings</h1>
+<%- include("../includes/category-bar.ejs") %>
+
+    <% 
+      const titles = {
+        beach: "Beachside stays",
+        mountain: "Mountain getaways",
+        city: "City stays",
+        countryside: "Countryside retreats",
+        lake: "Lakeside stays",
+        camping: "Camping & outdoors",
+        luxury: "Luxury stays",
+      };
+      const listSearchQ = (typeof locals !== "undefined" && locals.searchQuery !== undefined)
+        ? String(locals.searchQuery || "").trim()
+        : (typeof searchQuery !== "undefined" ? String(searchQuery || "").trim() : "");
+      const listCat = (typeof locals !== "undefined" && locals.selectedCategory != null)
+        ? locals.selectedCategory
+        : (typeof selectedCategory !== "undefined" ? selectedCategory : null);
+      const hasSearch = !!listSearchQ;
+      let pageTitle = "All listings";
+      if (hasSearch) {
+        pageTitle = "Search results";
+      } else if (listCat && titles[listCat]) {
+        pageTitle = titles[listCat];
+      }
+    %>
+    <h1 class="list-title"><%= pageTitle %></h1>
+    <% if (hasSearch) { %>
+      <p class="list-search-sub text-muted text-center mb-3">Showing results for &ldquo;<%= listSearchQ %>&rdquo;</p>
+    <% } %>
 
     <div class="container px-lg-5 px-md-3  px-2 ">
   <ul class="row  g-3 justify-content-between">
@@ -27,6 +55,16 @@
    </li>
     <%} %>
     </ul>
+
+    <% if (alllisting.length === 0) { %>
+      <p class="text-center text-muted py-5 mb-0">
+        <% if (hasSearch) { %>
+          No stays match your search. Try different words or clear the search box.
+        <% } else { %>
+          No stays in this category yet. Try another type or add a new listing.
+        <% } %>
+      </p>
+    <% } %>
     
     </div>
   

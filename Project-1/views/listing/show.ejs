@@ -5,6 +5,11 @@
     
     <div class="listing-details">
         <h1>You are checking <%= listinginfo.title %></h1>
+        <% if (listinginfo.category) {
+          const catLabels = { beach: "Beachside", mountain: "Mountains", city: "City", countryside: "Countryside", lake: "Lakeside", camping: "Camping", luxury: "Luxury" };
+        %>
+        <p class="listing-category-tag"><i class="fas fa-tag me-1" aria-hidden="true"></i><%= catLabels[listinginfo.category] || listinginfo.category %></p>
+        <% } %>
       <img src="<%= typeof listinginfo.image === 'object' ? listinginfo.image.url : listinginfo.image %>" alt="<%= listinginfo.title %>">
         <p class="desc"><%= listinginfo.description %></p>
         <p class="price">₹ <%= listinginfo.price.toLocaleString("en-IN") %></p>
