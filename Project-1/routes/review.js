@@ -71,6 +71,7 @@ router.delete("/:reviewId", isAuthenticated, isReviewAuthor, catchAsync(async (r
     if (!review) throw new AppError('Review not found', 404);
 
     const listing = await Listing.findById(listingId);
+    if (!listing) throw new AppError('Listing not found', 404);
     listing.reviews.pull(reviewId);
     await listing.save();
 
