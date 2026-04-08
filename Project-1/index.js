@@ -100,6 +100,9 @@ const AppError = require("./public/js/Error.js");
 const catchAsync = require("./public/js/wrapper.js");
 
 // ✅ Routes use karo
+app.get("/", (req, res) => {
+  res.redirect("/listing");
+});
 app.use("/listing", listingRouter);                        // /listing
 app.use("/listing/:listingId/reviews", reviewRouter);      // /listing/:listingId/reviews
 app.use("/", userRouter);                                  // /signup /login /logout
