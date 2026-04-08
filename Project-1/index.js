@@ -24,7 +24,7 @@ const session = require("express-session");
 const flash = require("connect-flash");
 
 const onesession = {
-    secret: "Listingsecret",
+    secret: process.env.Secret,
     saveUninitialized: true,
     resave: false,
     cookie: {
@@ -66,17 +66,33 @@ app.listen(port, () => {
     console.log("App is listening on port " + port);
 });
 
-// Database
+// Database (local or MongoDB Atlas via ATLASDB_URL in .env)
 const mongoose = require("mongoose");
+
+const dbUrl = process.env.ATLASDB_URL && String(process.env.ATLASDB_URL).trim();
+const useLocal = process.env.USE_LOCAL_DB === "true";
+
 main().then(() => {
     console.log("Database Connection Successful");
-}).catch(err => {
-    console.log("Error in Database connection:", err);
+}).catch((err) => {
+    console.error("Error in Database connection:", err.message || err);
+    if (err?.reason) console.error("Reason:", err.reason);
     process.exit(1);
 });
 
 async function main() {
-    await mongoose.connect('mongodb://127.0.0.1:27017/StayHub');
+    if (useLocal) {
+        await mongoose.connect("mongodb://127.0.0.1:27017/StayHub");
+        return;
+    }
+    if (!dbUrl) {
+        throw new Error(
+            "ATLASDB_URL missing in .env. Add your Atlas connection string, or set USE_LOCAL_DB=true for local MongoDB."
+        );
+    }
+    await mongoose.connect(dbUrl, {
+        serverSelectionTimeoutMS: 15000,
+    });
 }
 
 // Error handling
