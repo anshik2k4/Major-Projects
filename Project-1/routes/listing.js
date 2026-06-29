@@ -12,7 +12,6 @@ function escapeRegex(str) {
     return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-/** Normalize Express query (string | string[] | undefined) */
 function getSearchQuery(req) {
     const raw = req.query.q;
     if (raw == null) return "";
@@ -20,10 +19,6 @@ function getSearchQuery(req) {
     return typeof s === "string" ? s.trim() : String(s).trim();
 }
 
-/**
- * Match each word against title, location, country, or description (case-insensitive).
- * Uses MongoDB $regex so behavior is consistent across drivers.
- */
 function buildListingSearchFilter(q) {
     const tokens = q
         .split(/\s+/)
@@ -50,48 +45,8 @@ function buildListingSearchFilter(q) {
     return { $and: tokens.map(fieldMatch) };
 }
 
-const AppError = require("../public/js/Error.js");
-const catchAsync = require("../public/js/wrapper.js");
-const multer = require("multer"); // ✅ Multer import ye hume multipart data ko parse krne ki permission deta
-const { storage } = require("../Cloudinary.js"); // ← destructure 
-const upload = multer({ storage });
-
-
-// Middlewares
-const isAuthenticated = (req, res, next) => {
-    if (req.isAuthenticated()) {
-        next();
-    } else {
-        req.flash("error", "You need to login first!");
-        res.redirect("/login");
-    }
-};
-
-const validateObjectId = (req, res, next) => {
-    const { id } = req.params;
-    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-        return res.status(400).send("Invalid ID format");
-    }
-    next();
-};
-
-const isOwner = catchAsync(async (req, res, next) => {
-    let { id } = req.params;
-    const listing = await Listing.findById(id);
-    if (!listing) {
-        req.flash("error", "Listing not found!");
-        return res.redirect("/listing");
-    }
-    if (!listing.owner._id.equals(req.user._id)) {
-        req.flash("error", "You are not authorized to do this!");
-        return res.redirect(`/listing/${id}`);
-    }
-    next();
-});
-
-// Index route
-router.get("/", catchAsync(async (req, res) => {
-    const raw = req.query.category;
+function buildListingsQuery(query) {
+    const raw = query.category;
     let categoryFilter = null;
     let selectedCategory = null;
 
@@ -110,7 +65,7 @@ router.get("/", catchAsync(async (req, res) => {
         }
     }
 
-    const q = getSearchQuery(req);
+    const q = getSearchQuery({ query });
     let searchFilter = null;
     if (q) {
         searchFilter = buildListingSearchFilter(q);
@@ -125,87 +80,130 @@ router.get("/", catchAsync(async (req, res) => {
         filter = searchFilter;
     }
 
-    const alllisting = await Listing.find(filter);
-    res.render("listing/listing1.ejs", {
-        alllisting,
-        selectedCategory,
-        categoryBarItems: CATEGORY_BAR_ITEMS,
-        searchQuery: q,
+    return { filter, selectedCategory, searchQuery: q };
+}
+
+const AppError = require("../public/js/Error.js");
+const catchAsync = require("../public/js/wrapper.js");
+const multer = require("multer");
+const { storage } = require("../Cloudinary.js");
+const upload = multer({ storage });
+
+async function findListingWithReviews(id) {
+    return Listing.findById(id).populate({
+        path: "reviews",
+        populate: { path: "author", select: "username" },
     });
-}));
+}
 
-// New form
-router.get("/new", isAuthenticated, (req, res) => {
-    res.render("listing/new", { categoryOptions: categoryFormOptions });
-});
-
-// Create
-router.post("/", isAuthenticated, upload.single("image"), catchAsync(async (req, res) => {
-    let { title, description, price, location, country, category } = req.body;
-    let owner = req.user._id;
-
-    if (!title || !description || !price || !location || !country) {
-        throw new AppError("All fields are required", 400);
-    }
-
-    const listingCategory = isValidCategory(category) ? category : "city";
-
-    let image = {
-        url: req.file.path,
-        filename: req.file.filename
-    };
-
-    // ✅ Pehle title + location try karo
+async function geocodeListing(title, location, country) {
     let query = `${title}, ${location}, ${country}`;
     let geoRes = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`,
-        { headers: { 'User-Agent': 'StayHub/1.0 (anshikkumarak@gmail.com)' } } // ✅ Email fix
+        { headers: { "User-Agent": "StayHub/1.0 (anshikkumarak@gmail.com)" } }
     );
     let geoData = await geoRes.json();
 
-    // ✅ Nahi mila toh sirf location try karo
-    if(!geoData.length) {
+    if (!geoData.length) {
         query = `${location}, ${country}`;
         geoRes = await fetch(
             `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`,
-            { headers: { 'User-Agent': 'StayHub/1.0 (anshikkumarak@gmail.com)' } }
+            { headers: { "User-Agent": "StayHub/1.0 (anshikkumarak@gmail.com)" } }
         );
         geoData = await geoRes.json();
     }
 
-    let coordinates = {
+    return {
         lat: geoData[0]?.lat || null,
-        lon: geoData[0]?.lon || null
+        lon: geoData[0]?.lon || null,
     };
+}
+
+const isAuthenticated = (req, res, next) => {
+    if (req.isAuthenticated()) return next();
+    res.status(401).json({ error: "You need to login first!" });
+};
+
+const validateObjectId = (req, res, next) => {
+    const { id } = req.params;
+    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+    }
+    next();
+};
+
+const isOwner = catchAsync(async (req, res, next) => {
+    const { id } = req.params;
+    const listing = await Listing.findById(id);
+    if (!listing) {
+        return res.status(404).json({ error: "Listing not found!" });
+    }
+    const ownerId = listing.owner._id || listing.owner;
+    if (!ownerId.equals(req.user._id)) {
+        return res.status(403).json({ error: "You are not authorized to do this!" });
+    }
+    next();
+});
+
+router.get("/api", catchAsync(async (req, res) => {
+    const { filter, selectedCategory, searchQuery } = buildListingsQuery(req.query);
+    const listings = await Listing.find(filter);
+    res.json({
+        listings,
+        selectedCategory,
+        categoryBarItems: CATEGORY_BAR_ITEMS,
+        searchQuery,
+    });
+}));
+
+router.get("/api/form-options", (req, res) => {
+    res.json({ categoryOptions: categoryFormOptions });
+});
+
+router.get("/api/:id", validateObjectId, catchAsync(async (req, res) => {
+    const listing = await findListingWithReviews(req.params.id);
+    if (!listing) {
+        return res.status(404).json({ error: "Listing Not Found" });
+    }
+    res.json({ listing });
+}));
+
+router.post("/", isAuthenticated, upload.single("image"), catchAsync(async (req, res) => {
+    const { title, description, price, location, country, category } = req.body;
+    const owner = req.user._id;
+
+    if (!title || !description || !price || !location || !country) {
+        throw new AppError("All fields are required", 400);
+    }
+    if (!req.file) {
+        throw new AppError("Image is required", 400);
+    }
+
+    const listingCategory = isValidCategory(category) ? category : "city";
+    const coordinates = await geocodeListing(title, location, country);
 
     const newlisting = new Listing({
-        title, description,
-        image,
-        price, location, country, owner,
+        title,
+        description,
+        image: {
+            url: req.file.path,
+            filename: req.file.filename,
+        },
+        price,
+        location,
+        country,
+        owner,
         coordinates,
         category: listingCategory,
     });
 
     await newlisting.save();
-    req.flash("success", "Listing added successfully");
-    console.log("Query:", query);
-    console.log("GeoData:", geoData);
-    console.log("Coordinates:", coordinates);
-    res.redirect("/listing");
-}));
-
-// Update form
-router.get("/:id/update", isAuthenticated, validateObjectId, isOwner, catchAsync(async (req, res) => {
-    const { id } = req.params;
-    const Listings = await Listing.findById(id);
-    if (!Listings) throw new AppError("Listing Not Found", 404);
-    res.render("listing/update.ejs", {
-        Listings,
-        categoryOptions: categoryFormOptions,
+    res.status(201).json({
+        listing: newlisting,
+        message: "Listing added successfully",
     });
 }));
 
-// Update
 router.put("/:id", isAuthenticated, validateObjectId, isOwner, upload.single("image"), catchAsync(async (req, res) => {
     const { id } = req.params;
 
@@ -213,76 +211,48 @@ router.put("/:id", isAuthenticated, validateObjectId, isOwner, upload.single("im
         throw new AppError("Required fields missing", 400);
     }
 
-    // ✅ Geocoding — update pe bhi coordinates nikalo
-    let query = `${req.body.title}, ${req.body.location}, ${req.body.country}`;
-    let geoRes = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`,
-        { headers: { 'User-Agent': 'StayHub/1.0 (anshikkumarak@gmail.com)' } }
+    const coordinates = await geocodeListing(
+        req.body.title,
+        req.body.location,
+        req.body.country
     );
-    let geoData = await geoRes.json();
-
-    // ✅ Fallback
-    if(!geoData.length) {
-        query = `${req.body.location}, ${req.body.country}`;
-        geoRes = await fetch(
-            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`,
-            { headers: { 'User-Agent': 'StayHub/1.0 (anshikkumarak@gmail.com)' } }
-        );
-        geoData = await geoRes.json();
-    }
-
-    let coordinates = {
-        lat: geoData[0]?.lat || null,
-        lon: geoData[0]?.lon || null
-    };
 
     const listingCategory = isValidCategory(req.body.category)
         ? req.body.category
         : "city";
 
-    let updateData = {
+    const updateData = {
         title: req.body.title,
         description: req.body.description,
         price: req.body.price,
         location: req.body.location,
         country: req.body.country,
-        coordinates, // ✅ Coordinates update karo
+        coordinates,
         category: listingCategory,
     };
 
-    // ✅ Nai image upload hui toh update karo
     if (req.file) {
         updateData.image = {
             url: req.file.path,
-            filename: req.file.filename
+            filename: req.file.filename,
         };
     }
 
-    const updated = await Listing.findByIdAndUpdate(id, updateData);
+    const updated = await Listing.findByIdAndUpdate(id, updateData, { new: true });
     if (!updated) throw new AppError("Listing Not Found", 404);
-    req.flash("success", "Listing updated successfully!");
-    res.redirect(`/listing/${id}`);
+
+    res.json({
+        listing: updated,
+        message: "Listing updated successfully!",
+    });
 }));
 
-// Delete
 router.delete("/:id", isAuthenticated, validateObjectId, isOwner, catchAsync(async (req, res) => {
-    let { id } = req.params;
+    const { id } = req.params;
     const listing = await Listing.findById(id);
     if (!listing) throw new AppError("Listing Not Found", 404);
     await listing.deleteOne();
-    req.flash("success", "Listing deleted successfully!");
-    res.redirect("/listing");
-}));
-
-// Show
-router.get("/:id", validateObjectId, catchAsync(async (req, res) => {
-    let { id } = req.params;
-    const listinginfo = await Listing.findById(id).populate({
-        path: 'reviews',
-        populate: { path: 'author', select: 'username' }
-    });
-    if (!listinginfo) return res.status(404).send("Listing Not Found");
-    res.render("./listing/show.ejs", { listinginfo });
+    res.json({ message: "Listing deleted successfully!" });
 }));
 
 module.exports = router;

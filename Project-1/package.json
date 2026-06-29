@@ -15,14 +15,17 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "dev:client": "cd client && npm run dev",
+    "build": "npm run build:client",
+    "build:client": "cd client && npm install && npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
     "cloudinary": "^1.41.3",
-    "connect-flash": "^0.1.1",
+    "cors": "^2.8.6",
     "dotenv": "^17.3.1",
-    "ejs": "^3.1.10",
-    "ejs-mate": "^4.0.0",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
     "method-override": "^3.0.0",
@@ -33,7 +36,6 @@
     "nodemon": "^3.1.11",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
-    "passport-local-mongoose": "^9.0.1",
-    "path": "^0.12.7"
+    "passport-local-mongoose": "^9.0.1"
   }
 }

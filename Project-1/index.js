@@ -1,84 +1,78 @@
-// Requiring up packages
-require('dotenv').config(); // ✅ Sabse pehle
+require("dotenv").config();
 
+const fs = require("fs");
 const express = require("express");
 const app = express();
 const path = require("path");
 const methodOverride = require("method-override");
-const ejsMate = require("ejs-mate");
+const cors = require("cors");
 
-// Routes import
+const isProduction = process.env.NODE_ENV === "production";
+app.set("trust proxy", 1);
+
 const listingRouter = require("./routes/listing.js");
 const reviewRouter = require("./routes/review.js");
 const userRouter = require("./routes/user.js");
 
 app.use(methodOverride("_method"));
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
-// Passport setup
 const passport = require("passport");
 const localStrategy = require("passport-local");
 const User = require("./model/user.js");
-
-// Session setup
 const session = require("express-session");
-const flash = require("connect-flash");
 
 const onesession = {
     secret: process.env.Secret,
     saveUninitialized: true,
     resave: false,
     cookie: {
-        maxAge: 7*24*60*60*1000,
-        httpOnly: true
-    }
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: "lax",
+    },
 };
 
 app.use(session(onesession));
-app.use(flash());
-
 app.use(passport.initialize());
 app.use(passport.session());
 passport.use(new localStrategy(User.authenticate()));
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
-// Global middleware
-app.use((req, res, next) => {
-    res.locals.success = req.flash("success");
-    res.locals.error = req.flash("error");
-    res.locals.isLoggedIn = req.isAuthenticated();
-    res.locals.currentUser = req.user;
-    res.locals.searchQuery = "";
-    res.locals.selectedCategory = null;
-    next();
-});
+if (!isProduction) {
+    app.use(
+        cors({
+            origin: "http://localhost:5173",
+            credentials: true,
+        })
+    );
+}
 
-// EJS setup
-app.set("view engine", "ejs");
-app.engine("ejs", ejsMate);
-app.set("views", path.join(__dirname, "/views"));
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, "/public")));
+app.use(express.static(path.join(__dirname, "public")));
 
-// Port
-let port = 8080;
-app.listen(port, () => {
-    console.log("App is listening on port " + port);
-});
+const clientDist = path.join(__dirname, "client", "dist");
+const hasClientBuild = fs.existsSync(clientDist);
 
-// Database (local or MongoDB Atlas via ATLASDB_URL in .env)
+if (hasClientBuild) {
+    app.use(express.static(clientDist));
+}
+
 const mongoose = require("mongoose");
-
 const dbUrl = process.env.ATLASDB_URL && String(process.env.ATLASDB_URL).trim();
 const useLocal = process.env.USE_LOCAL_DB === "true";
 
-main().then(() => {
-    console.log("Database Connection Successful");
-}).catch((err) => {
-    console.error("Error in Database connection:", err.message || err);
-    if (err?.reason) console.error("Reason:", err.reason);
-    process.exit(1);
-});
+main()
+    .then(() => {
+        console.log("Database Connection Successful");
+    })
+    .catch((err) => {
+        console.error("Error in Database connection:", err.message || err);
+        if (err?.reason) console.error("Reason:", err.reason);
+        process.exit(1);
+    });
 
 async function main() {
     if (useLocal) {
@@ -95,34 +89,51 @@ async function main() {
     });
 }
 
-// Error handling
-const AppError = require("./public/js/Error.js");
-const catchAsync = require("./public/js/wrapper.js");
+app.use("/listing", listingRouter);
+app.use("/listing/:listingId/reviews", reviewRouter);
+app.use("/", userRouter);
 
-// ✅ Routes use karo
-app.get("/", (req, res) => {
-  res.redirect("/listing");
-});
-app.use("/listing", listingRouter);                        // /listing
-app.use("/listing/:listingId/reviews", reviewRouter);      // /listing/:listingId/reviews
-app.use("/", userRouter);                                  // /signup /login /logout
+if (hasClientBuild) {
+    app.get(/^(?!\/listing\/api)(?!\/api\/).*/, (req, res, next) => {
+        if (req.path.includes(".")) {
+            return next();
+        }
+        res.sendFile(path.join(clientDist, "index.html"));
+    });
+}
 
-// 404
-app.use((req, res, next) => {
+app.use((req, res) => {
+    if (
+        req.path.startsWith("/listing/api") ||
+        req.path.startsWith("/api/")
+    ) {
+        return res.status(404).json({ error: "Not found" });
+    }
     res.status(404).send("Page not found");
 });
 
-// Global error middleware
 app.use((err, req, res, next) => {
-    let { status = 500, message = "Some error occurred" } = err;
+    const status = err.status || err.statusCode || 500;
+    const message = err.message || "Some error occurred";
     console.error("Error:", err.stack);
-    if (process.env.NODE_ENV === 'development') {
-        res.status(status).send(`
-            <h1>Error ${status}</h1>
-            <p>${message}</p>
-            <pre>${err.stack}</pre>
-        `);
-    } else {
-        res.status(status).send(message);
+
+    if (
+        req.headers.accept?.includes("application/json") ||
+        req.path.startsWith("/listing/api") ||
+        req.path.startsWith("/api/")
+    ) {
+        return res.status(status).json({ error: message, message });
+    }
+
+    res.status(status).send(message);
+});
+
+const port = process.env.PORT || 8080;
+app.listen(port, () => {
+    console.log("App is listening on port " + port);
+    if (!hasClientBuild) {
+        console.log(
+            "React build not found. Run `npm run build` or use `npm run dev:client` for the UI."
+        );
     }
 });

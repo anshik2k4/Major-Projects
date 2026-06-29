@@ -3,66 +3,84 @@ const router = express.Router();
 const passport = require("passport");
 const User = require("../model/user.js");
 
-// Signup GET
-router.get("/signup", (req, res) => {
-    res.render("listing/signup.ejs");
-});
+function userPayload(user) {
+    return {
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+    };
+}
 
-// Signup POST
 router.post("/signup", async (req, res) => {
     try {
-        let { username, email, password } = req.body;
+        const { username, email, password } = req.body;
 
-        if (!username.trim() || !email.trim() || !password.trim()) {
-            req.flash("error", "All fields are required!");
-            return res.redirect("/signup");
+        if (!username?.trim() || !email?.trim() || !password?.trim()) {
+            return res.status(400).json({ error: "All fields are required!" });
         }
 
         if (password.length < 6) {
-            req.flash("error", "Password must be at least 6 characters!");
-            return res.redirect("/signup");
+            return res.status(400).json({ error: "Password must be at least 6 characters!" });
         }
 
-        let newUser = new User({ username, email });
-        let registeredUser = await User.register(newUser, password);
-        console.log(registeredUser);
-        req.flash("success", `Welcome ${username}, You registered Successfully!`);
-        res.redirect("/listing");
+        const newUser = new User({ username, email });
+        const registeredUser = await User.register(newUser, password);
 
+        res.status(201).json({
+            user: userPayload(registeredUser),
+            message: `Welcome ${username}, You registered Successfully!`,
+        });
     } catch (err) {
+        let message = err.message;
+
         if (err.name === "UserExistsError") {
-            req.flash("error", "Username already taken, try another!");
-            return res.redirect("/signup");
+            message = "Username already taken, try another!";
+        } else if (err.code === 11000 && err.keyPattern?.email) {
+            message = "Email already registered, try login!";
         }
-        if (err.code === 11000 && err.keyPattern.email) {
-            req.flash("error", "Email already registered, try login!");
-            return res.redirect("/signup");
-        }
-        req.flash("error", err.message);
-        res.redirect("/signup");
+
+        res.status(400).json({ error: message });
     }
 });
 
-// Login GET
-router.get("/login", (req, res) => {
-    res.render("listing/login.ejs");
+router.post("/login", (req, res, next) => {
+    passport.authenticate("local", (err, user, info) => {
+        if (err) return next(err);
+
+        if (!user) {
+            const message = info?.message || "Invalid username or password";
+            return res.status(401).json({ error: message });
+        }
+
+        req.logIn(user, (loginErr) => {
+            if (loginErr) return next(loginErr);
+
+            res.json({
+                user: userPayload(user),
+                message: `Welcome back ${user.username}!`,
+            });
+        });
+    })(req, res, next);
 });
 
-// Login POST
-router.post("/login", passport.authenticate("local", {
-    failureRedirect: "/login",
-    failureFlash: true
-}), (req, res) => {
-    req.flash("success", `Welcome back ${req.user.username}!`);
-    res.redirect("/listing");
+router.get("/api/auth/me", (req, res) => {
+    if (!req.user) {
+        return res.json({ user: null });
+    }
+    res.json({ user: userPayload(req.user) });
 });
 
-// Logout
+router.post("/api/auth/logout", (req, res, next) => {
+    req.logout((err) => {
+        if (err) return next(err);
+        res.json({ message: "Logged out successfully!" });
+    });
+});
+
 router.get("/logout", (req, res, next) => {
     req.logout((err) => {
         if (err) return next(err);
-        req.flash("success", "Logged out successfully!");
-        res.redirect("/listing");
+        res.redirect("/");
     });
 });
 
