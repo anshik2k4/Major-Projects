@@ -1,21 +1,25 @@
 import { useState } from "react";
 import { submitReview } from "../api/reviews";
+import { useToast } from "../context/ToastContext";
 
 export default function ReviewForm({ listingId, onSubmitted }) {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const toast = useToast();
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
 
     if (!rating) {
+      toast.warning("Please select a rating.");
       setError("Please select a rating.");
       return;
     }
     if (comment.trim().length < 10) {
+      toast.warning("Comment must be at least 10 characters.");
       setError("Comment must be at least 10 characters.");
       return;
     }
@@ -23,11 +27,13 @@ export default function ReviewForm({ listingId, onSubmitted }) {
     setSubmitting(true);
     try {
       await submitReview(listingId, { comment: comment.trim(), rating });
+      toast.success("Review submitted successfully!");
       setComment("");
       setRating(0);
       onSubmitted();
     } catch (err) {
       setError(err.message);
+      toast.error(err.message || "Failed to submit review.");
     } finally {
       setSubmitting(false);
     }

@@ -6,6 +6,7 @@ import {
   getListingImageUrl,
 } from "../api/listings";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 import Layout from "../components/Layout";
 import ListingForm from "../components/ListingForm";
 import ProtectedRoute from "../components/ProtectedRoute";
@@ -14,6 +15,7 @@ export default function EditListingPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const toast = useToast();
 
   const [listing, setListing] = useState(null);
   const [error, setError] = useState("");
@@ -48,8 +50,14 @@ export default function EditListingPage() {
   const isOwner = user && ownerId && String(user._id) === String(ownerId);
 
   async function handleSubmit(formData) {
-    const data = await updateListing(id, formData);
-    navigate(`/listing/${data.listing._id || id}`);
+    try {
+      const data = await updateListing(id, formData);
+      toast.success("Stay updated successfully!");
+      navigate(`/listing/${data.listing._id || id}`);
+    } catch (err) {
+      toast.error(err.message || "Failed to update stay.");
+      throw err;
+    }
   }
 
   if (loading) {

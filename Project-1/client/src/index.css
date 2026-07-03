@@ -109,3 +109,120 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+/* Toast System Stylings */
+.stayhub-toast-container {
+  position: fixed;
+  top: 90px;
+  right: 24px;
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 380px;
+  width: calc(100vw - 48px);
+  pointer-events: none;
+}
+
+.stayhub-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background: var(--bg);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  animation: stayhubToastSlideIn 0.3s ease-out forwards;
+  position: relative;
+  overflow: hidden;
+}
+
+.stayhub-toast--success {
+  border-left: 5px solid #10b981;
+}
+.stayhub-toast--success .stayhub-toast__icon {
+  color: #10b981;
+}
+
+.stayhub-toast--error {
+  border-left: 5px solid rgb(224, 59, 92);
+}
+.stayhub-toast--error .stayhub-toast__icon {
+  color: rgb(224, 59, 92);
+}
+
+.stayhub-toast--warning {
+  border-left: 5px solid #f59e0b;
+}
+.stayhub-toast--warning .stayhub-toast__icon {
+  color: #f59e0b;
+}
+
+.stayhub-toast--info {
+  border-left: 5px solid #3b82f6;
+}
+.stayhub-toast--info .stayhub-toast__icon {
+  color: #3b82f6;
+}
+
+.stayhub-toast__icon {
+  font-size: 1.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stayhub-toast__body {
+  flex-grow: 1;
+  text-align: left;
+}
+
+.stayhub-toast__text {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-h);
+}
+
+.stayhub-toast__close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  opacity: 0.5;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.stayhub-toast__close-btn:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+@keyframes stayhubToastSlideIn {
+  from {
+    transform: translateX(120%) scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 576px) {
+  .stayhub-toast-container {
+    right: 24px;
+    left: 24px;
+    max-width: none;
+    width: auto;
+  }
+}

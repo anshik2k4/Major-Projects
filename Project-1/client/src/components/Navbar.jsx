@@ -1,11 +1,13 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import { useToast } from "../context/ToastContext";
 
 export default function Navbar({ searchQuery = "", onSearch }) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
+  const toast = useToast();
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -23,8 +25,10 @@ export default function Navbar({ searchQuery = "", onSearch }) {
   async function handleLogout() {
     try {
       await logout();
+      toast.success("Logged out successfully! See you soon.");
       navigate("/");
-    } catch {
+    } catch (err) {
+      toast.error(err.message || "Failed to log out.");
       navigate("/");
     }
   }

@@ -7,6 +7,7 @@ import {
   CATEGORY_LABELS,
 } from "../api/listings";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 import Layout from "../components/Layout";
 import ListingMap from "../components/ListingMap";
 import ReviewForm from "../components/ReviewForm";
@@ -16,6 +17,7 @@ export default function ListingShowPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
+  const toast = useToast();
 
   const [listing, setListing] = useState(null);
   const [error, setError] = useState("");
@@ -43,9 +45,10 @@ export default function ListingShowPage() {
     if (!window.confirm("Delete this listing?")) return;
     try {
       await deleteListing(id);
+      toast.success("Listing deleted successfully.");
       navigate("/");
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message || "Failed to delete listing.");
     }
   }
 

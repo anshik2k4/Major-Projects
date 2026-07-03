@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 import Layout from "../components/Layout";
 
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const toast = useToast();
   const from = location.state?.from?.pathname || "/";
   const successMessage = location.state?.message || "";
 
@@ -15,16 +17,32 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    if (successMessage) {
+      toast.success(successMessage);
+      // Clear route state so refresh doesn't trigger the toast again
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [successMessage, toast, navigate, location.pathname]);
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+
+    if (!username.trim() || !password.trim()) {
+      toast.warning("Username and password are required.");
+      return;
+    }
+
     setSubmitting(true);
 
     try {
       await login({ username, password });
+      toast.success(`Welcome back, ${username}!`);
       navigate(from, { replace: true });
     } catch (err) {
       setError(err.message);
+      toast.error(err.message || "Failed to log in.");
     } finally {
       setSubmitting(false);
     }
@@ -35,10 +53,6 @@ export default function LoginPage() {
       <div className="signup-cont">
         <div className="signup-card">
           <h2 className="form-title">Welcome Back 👋</h2>
-
-          {successMessage && (
-            <p className="text-success small text-center">{successMessage}</p>
-          )}
 
           <form onSubmit={handleSubmit} noValidate>
             <label className="form-label">Username</label>

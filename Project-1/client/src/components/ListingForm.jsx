@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchFormOptions } from "../api/listings";
+import { useToast } from "../context/ToastContext";
 
 const EMPTY_VALUES = {
   title: "",
@@ -21,6 +22,7 @@ export default function ListingForm({
   const [imageFile, setImageFile] = useState(null);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     setValues({ ...EMPTY_VALUES, ...initialValues });
@@ -43,11 +45,13 @@ export default function ListingForm({
 
     if (!values.title.trim() || !values.description.trim() || !values.price ||
         !values.location.trim() || !values.country.trim()) {
+      toast.warning("All fields are required.");
       setError("All fields are required.");
       return;
     }
 
     if (!existingImageUrl && !imageFile) {
+      toast.warning("Please upload an image.");
       setError("Please upload an image.");
       return;
     }

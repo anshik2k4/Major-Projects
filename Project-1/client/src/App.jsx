@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
+import { ToastProvider } from "./context/ToastContext";
 import ListingsPage from "./pages/ListingsPage";
 import ListingShowPage from "./pages/ListingShowPage";
 import NewListingPage from "./pages/NewListingPage";
@@ -13,14 +14,16 @@ export default function App() {
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
-          <Routes>
-          <Route path="/" element={<ListingsPage />} />
-          <Route path="/listing/new" element={<NewListingPage />} />
-          <Route path="/listing/:id/update" element={<EditListingPage />} />
-          <Route path="/listing/:id" element={<ListingShowPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
-        </Routes>
+          <ToastProvider>
+            <Routes>
+              <Route path="/" element={<ListingsPage />} />
+              <Route path="/listing/new" element={<NewListingPage />} />
+              <Route path="/listing/:id/update" element={<EditListingPage />} />
+              <Route path="/listing/:id" element={<ListingShowPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignupPage />} />
+            </Routes>
+          </ToastProvider>
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>

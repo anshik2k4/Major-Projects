@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 import Layout from "../components/Layout";
 
 export default function SignupPage() {
   const { signup } = useAuth();
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -16,15 +18,28 @@ export default function SignupPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+
+    if (!username.trim() || !email.trim() || !password.trim()) {
+      toast.warning("All fields are required!");
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.warning("Password must be at least 6 characters!");
+      return;
+    }
+
     setSubmitting(true);
 
     try {
       await signup({ username, email, password });
+      toast.success("Account created successfully! Please log in.");
       navigate("/login", {
         state: { message: "Account created! Please log in." },
       });
     } catch (err) {
       setError(err.message);
+      toast.error(err.message || "Failed to create account.");
     } finally {
       setSubmitting(false);
     }

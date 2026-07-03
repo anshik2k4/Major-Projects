@@ -1,6 +1,9 @@
 import { deleteReview } from "../api/reviews";
+import { useToast } from "../context/ToastContext";
 
 export default function ReviewList({ listingId, reviews, currentUser, onChanged }) {
+  const toast = useToast();
+
   if (!reviews?.length) {
     return (
       <div className="no-reviews mt-5">
@@ -15,9 +18,10 @@ export default function ReviewList({ listingId, reviews, currentUser, onChanged 
     if (!window.confirm("Delete this review?")) return;
     try {
       await deleteReview(listingId, reviewId);
+      toast.success("Review deleted successfully.");
       onChanged();
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message || "Failed to delete review.");
     }
   }
 
