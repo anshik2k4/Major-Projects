@@ -13,6 +13,24 @@ export async function fetchListings({ category, q } = {}) {
   return res.json();
 }
 
+export async function searchStaysWithAi(query) {
+  const res = await fetch("/listing/api/ai-search", {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ query }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || data.message || "AI search failed");
+  }
+  return data;
+}
+
 export async function fetchListing(id) {
   const res = await fetch(`/listing/api/${id}`, { credentials: "include" });
   if (res.status === 404) {

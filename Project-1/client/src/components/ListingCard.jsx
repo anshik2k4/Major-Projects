@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { getListingImageUrl } from "../api/listings";
 
-export default function ListingCard({ listing }) {
+export default function ListingCard({ listing, matchReason }) {
   return (
     <li className="col listing-style">
       <Link
@@ -15,6 +15,9 @@ export default function ListingCard({ listing }) {
             alt={listing.title}
           />
           <div className="card-body">
+            {matchReason && (
+              <p className="ai-match-reason">{matchReason}</p>
+            )}
             <h5 className="card-title fw-bold small">{listing.title}</h5>
             <h3 className="card-title text-muted mb-2">{listing.location}</h3>
             <p>

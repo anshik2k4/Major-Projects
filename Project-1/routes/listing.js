@@ -88,6 +88,111 @@ const catchAsync = require("../public/js/wrapper.js");
 const multer = require("multer");
 const { storage } = require("../Cloudinary.js");
 const upload = multer({ storage });
+const {
+    extractStayFilters,
+    rankListings,
+} = require("../services/geminiStayMatcher.js");
+
+function textFieldFilter(value) {
+    return { $regex: escapeRegex(value), $options: "i" };
+}
+
+function categoryMongoFilter(category) {
+    if (!category) return null;
+    if (category === "city") {
+        return {
+            $or: [
+                { category: "city" },
+                { category: { $exists: false } },
+                { category: null },
+            ],
+        };
+    }
+    return { category };
+}
+
+function buildAiMongoFilter(filters, { dropPrice = false, dropCategory = false } = {}) {
+    const parts = [];
+
+    if (!dropCategory) {
+        const cat = categoryMongoFilter(filters.category);
+        if (cat) parts.push(cat);
+    }
+
+    if (filters.location) {
+        parts.push({ location: textFieldFilter(filters.location) });
+    }
+    if (filters.country) {
+        parts.push({ country: textFieldFilter(filters.country) });
+    }
+
+    if (!dropPrice) {
+        const price = {};
+        if (filters.minPrice != null) price.$gte = filters.minPrice;
+        if (filters.maxPrice != null) price.$lte = filters.maxPrice;
+        if (Object.keys(price).length) parts.push({ price });
+    }
+
+    if (filters.keywords.length) {
+        parts.push({
+            $or: filters.keywords.flatMap((token) => {
+                const rx = textFieldFilter(token);
+                return [
+                    { title: rx },
+                    { description: rx },
+                    { location: rx },
+                    { country: rx },
+                ];
+            }),
+        });
+    }
+
+    if (!parts.length) return {};
+    if (parts.length === 1) return parts[0];
+    return { $and: parts };
+}
+
+function orderListingsByRank(listings, ranked) {
+    const byId = new Map(listings.map((item) => [String(item._id), item]));
+    const ordered = [];
+    const seen = new Set();
+    const reasons = {};
+
+    for (const item of ranked) {
+        const listing = byId.get(item.id);
+        if (!listing || seen.has(item.id)) continue;
+        seen.add(item.id);
+        ordered.push(listing);
+        if (item.reason) reasons[item.id] = item.reason;
+    }
+
+    for (const listing of listings) {
+        const id = String(listing._id);
+        if (seen.has(id)) continue;
+        ordered.push(listing);
+    }
+
+    return { listings: ordered, matchReasons: reasons };
+}
+
+async function findListingsForAi(filters) {
+    let listings = await Listing.find(buildAiMongoFilter(filters));
+    let relaxed = false;
+
+    if (!listings.length && (filters.minPrice != null || filters.maxPrice != null)) {
+        listings = await Listing.find(buildAiMongoFilter(filters, { dropPrice: true }));
+        relaxed = listings.length > 0;
+    }
+
+    if (!listings.length && filters.category) {
+        listings = await Listing.find(
+            buildAiMongoFilter(filters, { dropPrice: true, dropCategory: true })
+        );
+        relaxed = listings.length > 0;
+    }
+
+    return { listings, relaxed };
+}
 
 async function findListingWithReviews(id) {
     return Listing.findById(id).populate({
@@ -159,6 +264,34 @@ router.get("/api", catchAsync(async (req, res) => {
 router.get("/api/form-options", (req, res) => {
     res.json({ categoryOptions: categoryFormOptions });
 });
+
+router.post("/api/ai-search", catchAsync(async (req, res) => {
+    const rawQuery = req.body?.query;
+    const query = typeof rawQuery === "string" ? rawQuery.trim() : "";
+
+    if (query.length < 8) {
+        throw new AppError(400, "Describe the stay you want in a bit more detail.");
+    }
+    if (query.length > 280) {
+        throw new AppError(400, "Keep your request under 280 characters.");
+    }
+
+    const filters = await extractStayFilters(query);
+    const { listings, relaxed } = await findListingsForAi(filters);
+    const ranked = await rankListings(query, listings);
+    const { listings: ordered, matchReasons } = orderListingsByRank(listings, ranked);
+
+    res.json({
+        listings: ordered,
+        matchReasons,
+        filters,
+        relaxed,
+        query,
+        selectedCategory: filters.category,
+        categoryBarItems: CATEGORY_BAR_ITEMS,
+        model: process.env.GEMINI_MODEL || "gemini-2.0-flash",
+    });
+}));
 
 router.get("/api/:id", validateObjectId, catchAsync(async (req, res) => {
     const listing = await findListingWithReviews(req.params.id);
