@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
@@ -11,6 +11,7 @@ export default function LoginPage() {
   const toast = useToast();
   const from = location.state?.from?.pathname || "/";
   const successMessage = location.state?.message || "";
+  const signupToastShown = useRef(false);
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -18,12 +19,14 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (successMessage) {
-      toast.success(successMessage);
-      // Clear route state so refresh doesn't trigger the toast again
-      navigate(location.pathname, { replace: true, state: {} });
-    }
-  }, [successMessage, toast, navigate, location.pathname]);
+    if (!successMessage || signupToastShown.current) return;
+    signupToastShown.current = true;
+    toast.success(successMessage);
+    navigate(location.pathname, {
+      replace: true,
+      state: location.state?.from ? { from: location.state.from } : {},
+    });
+  }, [successMessage, toast, navigate, location.pathname, location.state]);
 
   async function handleSubmit(e) {
     e.preventDefault();

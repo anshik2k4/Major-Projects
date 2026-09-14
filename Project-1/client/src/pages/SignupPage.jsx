@@ -33,9 +33,8 @@ export default function SignupPage() {
 
     try {
       await signup({ username, email, password });
-      toast.success("Account created successfully! Please log in.");
       navigate("/login", {
-        state: { message: "Account created! Please log in." },
+        state: { message: "Account created successfully! Please log in." },
       });
     } catch (err) {
       setError(err.message);
