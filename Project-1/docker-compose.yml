@@ -1,0 +1,58 @@
+services:
+  backend1:
+    build:
+      context: ./        # Project-1/ root = backend
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - PORT=8080
+      - SERVER_NAME=backend1
+
+  backend2:
+    build:
+      context: ./        # Project-1/ root = backend
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "8082:8080"
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - PORT=8080
+      - SERVER_NAME=backend2
+
+  client:
+    build:
+      context: ./client  # Project-1/client = frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      - backend1
+      - backend2
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - client
+      - backend1
+      - backend2

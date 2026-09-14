@@ -10,6 +10,14 @@ const cors = require("cors");
 const isProduction = process.env.NODE_ENV === "production";
 app.set("trust proxy", 1);
 
+app.use((req, res, next) => {
+    if (process.env.SERVER_NAME) {
+        res.setHeader("X-Server-Name", process.env.SERVER_NAME);
+        console.log(`[${process.env.SERVER_NAME}] Handled request: ${req.method} ${req.url}`);
+    }
+    next();
+});
+
 const listingRouter = require("./routes/listing.js");
 const reviewRouter = require("./routes/review.js");
 const userRouter = require("./routes/user.js");

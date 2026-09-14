@@ -1,3 +1,5 @@
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, "../.env") });
 const mongoose = require("mongoose");
 
 const Listing = require("../model/listing.js");
@@ -494,7 +496,23 @@ async function ensureSeedOwner() {
 }
 
 async function run() {
-  await mongoose.connect("mongodb://127.0.0.1:27017/StayHub");
+  const dbUrl = process.env.ATLASDB_URL && String(process.env.ATLASDB_URL).trim();
+  const useLocal = process.env.USE_LOCAL_DB === "true";
+
+  if (useLocal) {
+    console.log("Connecting to local MongoDB...");
+    await mongoose.connect("mongodb://127.0.0.1:27017/StayHub");
+  } else {
+    if (!dbUrl) {
+      throw new Error(
+        "ATLASDB_URL missing in .env. Add your Atlas connection string, or set USE_LOCAL_DB=true for local MongoDB."
+      );
+    }
+    console.log("Connecting to Atlas MongoDB...");
+    await mongoose.connect(dbUrl, {
+      serverSelectionTimeoutMS: 15000,
+    });
+  }
 
   const owner = await ensureSeedOwner();
 
